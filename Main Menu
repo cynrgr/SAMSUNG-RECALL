@@ -53,9 +53,17 @@ public class MainMenu {
         JButton btnAppointment = new JButton("BOOK AN APPOINTMENT");
         btnAppointment.addActionListener(new ActionListener() {
         	public void actionPerformed(ActionEvent e) {
-        		SignIn window = new SignIn();
-        		SignIn.main(null);
-				frmMainMenu.dispose();
+        		EventQueue.invokeLater(new Runnable() {
+                    public void run() {
+                        try {
+                        	SignIn window = new SignIn(serialNumber, conn);
+                    		window.getFrame().setVisible(true);
+            				frmMainMenu.dispose();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
         	}
         });
         btnAppointment.setForeground(new Color(13, 38, 167));
@@ -63,11 +71,11 @@ public class MainMenu {
         btnAppointment.setBounds(99, 350, 444, 50);
         frmMainMenu.getContentPane().add(btnAppointment);
 
-        JButton btnTransaction = new JButton("SWAP ITEMS");
-        btnTransaction.setForeground(new Color(13, 38, 167));
-        btnTransaction.setFont(new Font("Tahoma", Font.BOLD, 20));
-        btnTransaction.setBounds(99, 430, 444, 50);
-        frmMainMenu.getContentPane().add(btnTransaction);
+        JButton btnTrack = new JButton("TRACK YOUR APPOINTMENT");
+        btnTrack.setForeground(new Color(13, 38, 167));
+        btnTrack.setFont(new Font("Tahoma", Font.BOLD, 20));
+        btnTrack.setBounds(99, 430, 444, 50);
+        frmMainMenu.getContentPane().add(btnTrack);
 
         JPanel panel = new JPanel();
         panel.setBackground(new Color(13, 38, 167));
