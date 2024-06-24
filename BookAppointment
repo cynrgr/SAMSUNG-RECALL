@@ -12,6 +12,9 @@ import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import javax.swing.JComboBox;
 import javax.swing.JOptionPane;
@@ -25,11 +28,16 @@ import javax.swing.SwingConstants;
 public class BookAppointment {
 
     private JFrame frmBookAppointment;
-    private JTextField textFieldName;
     private JTextField textFieldContact;
-    private JTextField textFieldEmail;
     private JDateChooser dateChooser;
     private ButtonGroup timeGroup;
+    private String fName;
+    private String lName;
+    private String email;
+    private Connection conn;
+    private String serialNumber;
+    private JLabel lblInsertName;
+    private JLabel lblInsertEmail;
 
     /**
      * Launch the application.
@@ -38,7 +46,7 @@ public class BookAppointment {
         EventQueue.invokeLater(new Runnable() {
             public void run() {
                 try {
-                    BookAppointment window = new BookAppointment(null);
+                    BookAppointment window = new BookAppointment(null, null, null, null, null);
                     window.frmBookAppointment.setVisible(true);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -51,8 +59,15 @@ public class BookAppointment {
      * Create the application.
      * @param conn 
      */
-    public BookAppointment(Connection conn) {
+
+    public BookAppointment(String serialNumber, String fName, String lName, String email, Connection conn) {
+        this.serialNumber = serialNumber;
+        this.fName = fName;
+        this.lName = lName;
+        this.email = email;
+        this.conn = conn;
         initialize();
+        loadDeviceInfo();
     }
 
     /**
@@ -63,7 +78,7 @@ public class BookAppointment {
         frmBookAppointment.setIconImage(Toolkit.getDefaultToolkit().getImage("C:\\Users\\murei\\OneDrive\\Documents\\codes\\SAMSUNG Recall Management\\photos used\\samsungLogo.png"));
         frmBookAppointment.setTitle("Book an Appointment");
         frmBookAppointment.getContentPane().setBackground(new Color(255, 255, 255));
-        frmBookAppointment.setBounds(100, 100, 728, 500);
+        frmBookAppointment.setBounds(100, 100, 728, 551);
         frmBookAppointment.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frmBookAppointment.getContentPane().setLayout(null);
 
@@ -75,48 +90,47 @@ public class BookAppointment {
         lblBookAppointment.setFont(new Font("Tahoma", Font.BOLD, 20));
         lblBookAppointment.setBounds(232, 10, 250, 25);
         frmBookAppointment.getContentPane().add(lblBookAppointment);
-
+        
         JLabel lblName = new JLabel("Name:");
         lblName.setFont(new Font("Tahoma", Font.PLAIN, 15));
-        lblName.setBounds(174, 52, 100, 25);
+        lblName.setBounds(175, 88, 100, 25);
         frmBookAppointment.getContentPane().add(lblName);
-
-        textFieldName = new JTextField();
-        textFieldName.setBounds(324, 52, 200, 25);
-        frmBookAppointment.getContentPane().add(textFieldName);
-        textFieldName.setColumns(10);
+        
+        lblInsertName = new JLabel();
+        lblInsertName.setFont(new Font("Tahoma", Font.PLAIN, 15));
+        lblInsertName.setBounds(325, 88, 200, 25);
+        frmBookAppointment.getContentPane().add(lblInsertName);
+        
+        JLabel lblEmail = new JLabel("Email:");
+        lblEmail.setFont(new Font("Tahoma", Font.PLAIN, 15));
+        lblEmail.setBounds(175, 124, 100, 25);
+        frmBookAppointment.getContentPane().add(lblEmail);
+        
+        lblInsertEmail = new JLabel();
+        lblInsertEmail.setFont(new Font("Tahoma", Font.PLAIN, 15));
+        lblInsertEmail.setBounds(325, 124, 200, 25);
+        frmBookAppointment.getContentPane().add(lblInsertEmail);
 
         JLabel lblContact = new JLabel("Contact Info:");
         lblContact.setFont(new Font("Tahoma", Font.PLAIN, 15));
-        lblContact.setBounds(174, 92, 100, 25);
+        lblContact.setBounds(175, 162, 100, 25);
         frmBookAppointment.getContentPane().add(lblContact);
 
         textFieldContact = new JTextField();
-        textFieldContact.setBounds(324, 92, 200, 25);
+        textFieldContact.setBounds(325, 162, 200, 25);
         frmBookAppointment.getContentPane().add(textFieldContact);
         textFieldContact.setColumns(10);
 
-        JLabel lblEmail = new JLabel("Email:");
-        lblEmail.setFont(new Font("Tahoma", Font.PLAIN, 15));
-        lblEmail.setBounds(174, 132, 100, 25);
-        frmBookAppointment.getContentPane().add(lblEmail);
-
-        textFieldEmail = new JTextField();
-        textFieldEmail.setBounds(324, 132, 200, 25);
-        frmBookAppointment.getContentPane().add(textFieldEmail);
-        textFieldEmail.setColumns(10);
-
         JLabel lblBranch = new JLabel("Branch:");
         lblBranch.setFont(new Font("Tahoma", Font.PLAIN, 15));
-        lblBranch.setBounds(174, 172, 100, 25);
+        lblBranch.setBounds(175, 202, 100, 25);
         frmBookAppointment.getContentPane().add(lblBranch);
-
-        JComboBox<String> comboBoxBranch = new JComboBox<>();
+        
+        JComboBox<String> comboBoxBranch = new JComboBox<String>();
         comboBoxBranch.setFont(new Font("Tahoma", Font.PLAIN, 15));
-        comboBoxBranch.setBounds(324, 172, 200, 25);
+        comboBoxBranch.setBounds(325, 202, 200, 25);
         frmBookAppointment.getContentPane().add(comboBoxBranch);
-
-        // Add branches to the dropdown menu
+        
         comboBoxBranch.addItem("Manila");
         comboBoxBranch.addItem("Quezon City");
         comboBoxBranch.addItem("Batangas Area");
@@ -125,22 +139,35 @@ public class BookAppointment {
         comboBoxBranch.addItem("Iloilo");
         comboBoxBranch.addItem("Davao Region");
 
+        JLabel lblType = new JLabel("Appointment Type:");
+        lblType.setFont(new Font("Tahoma", Font.PLAIN, 15));
+        lblType.setBounds(175, 242, 140, 25);
+        frmBookAppointment.getContentPane().add(lblType);
+
+        JComboBox<String> comboBoxAType = new JComboBox<>();
+        comboBoxAType.setFont(new Font("Tahoma", Font.PLAIN, 15));
+        comboBoxAType.setBounds(325, 242, 200, 25);
+        frmBookAppointment.getContentPane().add(comboBoxAType);
+        
+        comboBoxAType.addItem("Refund");
+        comboBoxAType.addItem("Repair");
+
         JLabel lblDate = new JLabel("Date:");
         lblDate.setFont(new Font("Tahoma", Font.PLAIN, 15));
-        lblDate.setBounds(174, 212, 100, 25);
+        lblDate.setBounds(175, 282, 100, 25);
         frmBookAppointment.getContentPane().add(lblDate);
 
         dateChooser = new JDateChooser();
-        dateChooser.setBounds(324, 212, 200, 25);
+        dateChooser.setBounds(325, 282, 200, 25);
         frmBookAppointment.getContentPane().add(dateChooser);
 
         JLabel lblTime = new JLabel("Time:");
         lblTime.setFont(new Font("Tahoma", Font.PLAIN, 15));
-        lblTime.setBounds(174, 252, 100, 25);
+        lblTime.setBounds(175, 322, 100, 25);
         frmBookAppointment.getContentPane().add(lblTime);
 
         JPanel timePanel = new JPanel();
-        timePanel.setBounds(324, 252, 200, 100);
+        timePanel.setBounds(325, 322, 200, 100);
         frmBookAppointment.getContentPane().add(timePanel);
         timePanel.setLayout(null);
 
@@ -172,15 +199,35 @@ public class BookAppointment {
         btnSubmit.setBackground(new Color(13, 38, 167));
         btnSubmit.setForeground(new Color(255, 255, 255));
         btnSubmit.setFont(new Font("Tahoma", Font.BOLD, 15));
-        btnSubmit.setBounds(307, 372, 100, 30);
+        btnSubmit.setBounds(307, 433, 100, 30);
         frmBookAppointment.getContentPane().add(btnSubmit);
 
         JButton btnBack = new JButton("Back to Main Menu");
         btnBack.setBackground(new Color(13, 38, 167));
         btnBack.setForeground(new Color(255, 255, 255));
         btnBack.setFont(new Font("Tahoma", Font.BOLD, 15));
-        btnBack.setBounds(257, 412, 200, 30);
+        btnBack.setBounds(257, 473, 200, 30);
         frmBookAppointment.getContentPane().add(btnBack);
+        
+        JPanel panel = new JPanel();
+        panel.setLayout(null);
+        panel.setBackground(new Color(13, 38, 167));
+        panel.setBounds(0, 37, 712, 40);
+        frmBookAppointment.getContentPane().add(panel);
+        
+        JLabel lblSignInGreeting = new JLabel("SERIAL NUMBER: " + serialNumber);
+        lblSignInGreeting.setHorizontalAlignment(SwingConstants.CENTER);
+        lblSignInGreeting.setForeground(Color.WHITE);
+        lblSignInGreeting.setFont(new Font("Tahoma", Font.BOLD, 15));
+        lblSignInGreeting.setBounds(75, 11, 562, 18);
+        panel.add(lblSignInGreeting);
+        
+        JLabel lblSerialNumber = new JLabel();
+        lblSerialNumber.setForeground(Color.WHITE);
+        lblSerialNumber.setFont(new Font("Tahoma", Font.BOLD, 15));
+        lblSerialNumber.setBounds(325, 11, 200, 18);
+        lblSerialNumber.setHorizontalAlignment(SwingConstants.CENTER);
+        panel.add(lblSerialNumber);
 
         // Action listener for the btnBack button
         btnBack.addActionListener(new ActionListener() {
@@ -194,22 +241,19 @@ public class BookAppointment {
         // Action listener for the btnSubmit button
         btnSubmit.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                // Add functionality to submit the appointment details
-                // For now, we will just display a confirmation message
-                String name = textFieldName.getText();
                 String contact = textFieldContact.getText();
-                String email = textFieldEmail.getText();
                 String branch = (String) comboBoxBranch.getSelectedItem();
+                String type = (String) comboBoxAType.getSelectedItem();
                 String date = ((JTextField) dateChooser.getDateEditor().getUiComponent()).getText();
                 String time = getSelectedTime();
 
-                if (name.isEmpty() || contact.isEmpty() || email.isEmpty() || branch == null || date.isEmpty() || time == null) {
+                if (contact.isEmpty() || branch == null || date.isEmpty() || time == null) {
                     JOptionPane.showMessageDialog(frmBookAppointment, 
                         "Please fill out all fields.", 
                         "Incomplete Form", JOptionPane.ERROR_MESSAGE);
                 } else {
                     JOptionPane.showMessageDialog(frmBookAppointment, 
-                        "Appointment booked for " + name + " at " + branch + " on " + date + " at " + time + ".\n" +
+                        "Appointment booked for " + fName + " " + lName + " at " + branch + " on " + date + " at " + time + ".\n" +
                         "A confirmation email has been sent to " + email + ".",
                         "Appointment Confirmation", JOptionPane.INFORMATION_MESSAGE);
                 }
@@ -238,8 +282,12 @@ public class BookAppointment {
         return null;
     }
 
-	public Window getFrame() {
-		// TODO Auto-generated method stub
-		return frmBookAppointment;
-	}
+    private void loadDeviceInfo() {
+        lblInsertName.setText(fName + " " + lName);
+        lblInsertEmail.setText(email);
+    }
+
+    public Window getFrame() {
+        return frmBookAppointment;
+    }
 }
