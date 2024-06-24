@@ -11,11 +11,9 @@ import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Random;
+import java.util.UUID;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
 import javax.swing.JComboBox;
 import javax.swing.JOptionPane;
 import javax.swing.JRadioButton;
@@ -59,7 +57,6 @@ public class BookAppointment {
      * Create the application.
      * @param conn 
      */
-
     public BookAppointment(String serialNumber, String fName, String lName, String email, Connection conn) {
         this.serialNumber = serialNumber;
         this.fName = fName;
@@ -150,7 +147,7 @@ public class BookAppointment {
         frmBookAppointment.getContentPane().add(comboBoxAType);
         
         comboBoxAType.addItem("Refund");
-        comboBoxAType.addItem("Repair");
+        comboBoxAType.addItem("Recall");
 
         JLabel lblDate = new JLabel("Date:");
         lblDate.setFont(new Font("Tahoma", Font.PLAIN, 15));
@@ -221,20 +218,11 @@ public class BookAppointment {
         lblSignInGreeting.setFont(new Font("Tahoma", Font.BOLD, 15));
         lblSignInGreeting.setBounds(75, 11, 562, 18);
         panel.add(lblSignInGreeting);
-        
-        JLabel lblSerialNumber = new JLabel();
-        lblSerialNumber.setForeground(Color.WHITE);
-        lblSerialNumber.setFont(new Font("Tahoma", Font.BOLD, 15));
-        lblSerialNumber.setBounds(325, 11, 200, 18);
-        lblSerialNumber.setHorizontalAlignment(SwingConstants.CENTER);
-        panel.add(lblSerialNumber);
 
         // Action listener for the btnBack button
         btnBack.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                MainMenu mainMenu = new MainMenu(null, null);
-                mainMenu.getFrame().setVisible(true);
-                frmBookAppointment.dispose();
+                openMainMenu();
             }
         });
 
@@ -252,10 +240,16 @@ public class BookAppointment {
                         "Please fill out all fields.", 
                         "Incomplete Form", JOptionPane.ERROR_MESSAGE);
                 } else {
+                    String transactionId = generateTransactionId();
                     JOptionPane.showMessageDialog(frmBookAppointment, 
                         "Appointment booked for " + fName + " " + lName + " at " + branch + " on " + date + " at " + time + ".\n" +
                         "A confirmation email has been sent to " + email + ".",
                         "Appointment Confirmation", JOptionPane.INFORMATION_MESSAGE);
+                    
+                    JOptionPane.showMessageDialog(frmBookAppointment, 
+                            "Transaction ID: " + transactionId + "\n" + "PLEASE COPY FOR SMOOTH TRANSACTION",
+                            "IMPORTANT: TRANSACTION ID", JOptionPane.INFORMATION_MESSAGE);
+                    
                 }
             }
         });
@@ -285,6 +279,31 @@ public class BookAppointment {
     private void loadDeviceInfo() {
         lblInsertName.setText(fName + " " + lName);
         lblInsertEmail.setText(email);
+    }
+    
+    private String generateTransactionId() {
+        int length = 10;
+        String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        StringBuilder sb = new StringBuilder();
+        Random random = new Random();
+
+        for (int i = 0; i < length; i++) {
+            char randChar = characters.charAt(random.nextInt(characters.length()));
+            sb.append(randChar);
+        }
+
+        return sb.toString();
+    }
+    
+ // Method to open Main Menu window
+    private void openMainMenu() {
+        EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                MainMenu mainMenu = new MainMenu(serialNumber, conn); // Pass serialNumber and conn back to MainMenu
+                mainMenu.getFrame().setVisible(true);
+                frmBookAppointment.dispose();
+            }
+        });
     }
 
     public Window getFrame() {
