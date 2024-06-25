@@ -1,0 +1,161 @@
+package pages;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.EventQueue;
+import java.awt.Font;
+import java.awt.Window;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+
+public class ViewBatch {
+
+    private JFrame frame;
+    private Connection conn;
+
+    /**
+     * Launch the application.
+     */
+    public static void main(String[] args) {
+        EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                try {
+                    ViewBatch window = new ViewBatch(null);
+                    window.frame.setVisible(true);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    /**
+     * Create the application.
+     */
+    public ViewBatch(Connection conn) {
+        this.conn = conn;
+        initialize();
+    }
+
+    /**
+     * Initialize the contents of the frame.
+     */
+    private void initialize() {
+        frame = new JFrame();
+        frame.setBounds(100, 100, 1200, 600);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.getContentPane().setLayout(null);
+
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(null);
+        contentPanel.setBounds(0, 0, 1200, 600);
+
+        // Define column names
+        String[] columnNames = {"Batch 1", "Batch 2", "Batch 3", "Batch 4", "Batch 5"};
+        Object[][] data = fetchDataFromDatabase();
+
+        DefaultTableModel model = new DefaultTableModel(data, columnNames);
+        JTable table = new JTable(model);
+
+        // Set a larger font for the table
+        table.setFont(new Font("Tahoma", Font.PLAIN, 18));
+        table.setRowHeight(30);
+
+        // Custom cell renderer to color the columns based on devCondition
+        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component cell = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                String serialNumber = (String) value;
+                String devCondition = getDeviceCondition(serialNumber);
+                if ("damaged".equalsIgnoreCase(devCondition)) {
+                    cell.setForeground(Color.RED);
+                } else if ("not damaged".equalsIgnoreCase(devCondition)) {
+                    cell.setForeground(Color.GREEN);
+                } else {
+                    cell.setForeground(Color.BLACK);
+                }
+                return cell;
+            }
+        });
+
+        JScrollPane tableScrollPane = new JScrollPane(table);
+        tableScrollPane.setBounds(50, 50, 1100, 400);
+        contentPanel.add(tableScrollPane);
+
+        JScrollPane scrollPane = new JScrollPane(contentPanel);
+        scrollPane.setBounds(0, 0, 1200, 600);
+        frame.getContentPane().add(scrollPane);
+    }
+
+    /**
+     * Fetch data from the database.
+     */
+    private Object[][] fetchDataFromDatabase() {
+        // Define the number of rows and columns
+        int numRows = 30;
+        int numCols = 5;
+
+        Object[][] data = new Object[numRows][numCols];
+        String query = "SELECT BatchNum, SerialNum FROM device ORDER BY BatchNum, SerialNum";
+
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+            ResultSet rs = pstmt.executeQuery();
+            Map<Integer, ArrayList<String>> batchMap = new HashMap<>();
+
+            while (rs.next()) {
+                int batchNum = rs.getInt("BatchNum");
+                String serialNum = rs.getString("SerialNum");
+
+                batchMap.computeIfAbsent(batchNum, k -> new ArrayList<>()).add(serialNum);
+            }
+
+            // Populate the data array based on the batch numbers
+            for (int col = 0; col < numCols; col++) {
+                ArrayList<String> serialNums = batchMap.get(col + 1);
+                if (serialNums != null) {
+                    for (int row = 0; row < numRows && row < serialNums.size(); row++) {
+                        data[row][col] = serialNums.get(row);
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return data;
+    }
+
+    /**
+     * Get the device condition for a given serial number.
+     */
+    private String getDeviceCondition(String serialNumber) {
+        String condition = "";
+        String query = "SELECT DevCondition FROM device WHERE SerialNum = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, serialNumber);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                condition = rs.getString("DevCondition");
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return condition;
+    }
+
+    public Window getFrame() {
+        return frame;
+    }
+}
