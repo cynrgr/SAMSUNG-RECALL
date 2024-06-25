@@ -1,0 +1,221 @@
+package pages;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.EventQueue;
+import java.awt.Font;
+import java.awt.Window;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import javax.swing.JButton;
+import javax.swing.DefaultCellEditor;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
+
+public class Appointments {
+
+    private JFrame frmAppt;
+    private JTable table;
+    private DefaultTableModel model;
+    private Connection conn;
+
+    /**
+     * Launch the application.
+     */
+    public static void main(String[] args) {
+        EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                try {
+                    Appointments window = new Appointments(null);
+                    window.frmAppt.setVisible(true);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    /**
+     * Create the application.
+     */
+    public Appointments(Connection conn) {
+        this.conn = conn;
+        initialize();
+    }
+
+    /**
+     * Initialize the contents of the frame.
+     */
+    private void initialize() {
+        frmAppt = new JFrame();
+        frmAppt.setBounds(100, 100, 1200, 600);
+        frmAppt.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frmAppt.getContentPane().setLayout(null);
+
+        String[] columnNames = {"Transaction ID", "Time", "Date", "Appointment Type", "Appointment Status", "Action"};
+        model = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == 5; // Only the action column is editable
+            }
+        };
+
+        table = new JTable(model) {
+            @Override
+            public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
+                Component c = super.prepareRenderer(renderer, row, column);
+                if (column != 5) { // Skip the Action column
+                    Color color = (Color) model.getValueAt(row, 5);
+                    if (color != null) {
+                        c.setBackground(color);
+                    } else {
+                        c.setBackground(Color.WHITE);
+                    }
+                }
+                return c;
+            }
+        };
+
+        table.setFont(new Font("Tahoma", Font.PLAIN, 16));
+        table.setRowHeight(30);
+
+        table.getColumnModel().getColumn(5).setCellRenderer(new ActionRenderer());
+        table.getColumnModel().getColumn(5).setCellEditor(new ActionEditor());
+
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int row = table.rowAtPoint(e.getPoint());
+                int col = table.columnAtPoint(e.getPoint());
+                if (col == 0) { // Clicked on the Transaction ID column
+                    String transacID = (String) table.getValueAt(row, col);
+                    showTransactionDetails(transacID);
+                }
+            }
+        });
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBounds(51, 50, 1083, 400);
+        frmAppt.getContentPane().add(scrollPane);
+
+        loadData();
+    }
+
+    private void loadData() {
+        String query = "SELECT transacID, ApptTime, ApptDate, ApptType, ApptStatus FROM recall";
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                String transacID = rs.getString("transacID");
+                String apptTime = rs.getString("ApptTime");
+                String apptDate = rs.getString("ApptDate");
+                String apptType = rs.getString("ApptType");
+                String apptStatus = rs.getString("ApptStatus");
+                model.addRow(new Object[] {transacID, apptTime, apptDate, apptType, apptStatus, null});
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(frmAppt, "Error loading data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void showTransactionDetails(String transacID) {
+        String query = "SELECT SerialNum, SamsungEmail, LastName, FirstName, PhoneNum, ApptType, Branch, ApptDate, ApptTime FROM recall WHERE transacID = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, transacID);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                String details = String.format(
+                    "Transaction ID: %s\nSerial Number: %s\nEmail: %s\nLast Name: "
+                    + "%s\nFirst Name: %s\nPhone Number: %s\nAppointment Type: %s\nStore Branch: %s\nAppointment Date: %s\nAppointment Time: %s",
+                    transacID,
+                    rs.getString("SerialNum"),
+                    rs.getString("SamsungEmail"),
+                    rs.getString("LastName"),
+                    rs.getString("FirstName"),
+                    rs.getString("PhoneNum"),
+                    rs.getString("ApptType"),
+                    rs.getString("Branch"),
+                    rs.getString("ApptDate"),
+                    rs.getString("ApptTime")
+                );
+                JOptionPane.showMessageDialog(frmAppt, details, "Transaction Details", JOptionPane.INFORMATION_MESSAGE);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(frmAppt, "Error fetching transaction details: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    class ActionRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            JPanel panel = new JPanel();
+            JButton btnInactive = new JButton("Inactive");
+            JButton btnDone = new JButton("Done");
+
+            panel.add(btnInactive);
+            panel.add(btnDone);
+
+            return panel;
+        }
+    }
+
+    class ActionEditor extends DefaultCellEditor {
+        private JPanel panel;
+        private JButton btnInactive;
+        private JButton btnDone;
+
+        public ActionEditor() {
+            super(new JTextField());
+            panel = new JPanel();
+            btnInactive = new JButton("Inactive");
+            btnDone = new JButton("Done");
+
+            panel.add(btnInactive);
+            panel.add(btnDone);
+
+            btnInactive.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    fireEditingStopped();
+                    int row = table.getSelectedRow();
+                    model.setValueAt(Color.RED, row, 5); // Set the color in the model
+                    table.repaint();
+                }
+            });
+
+            btnDone.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    fireEditingStopped();
+                    int row = table.getSelectedRow();
+                    model.setValueAt(Color.GREEN, row, 5); // Set the color in the model
+                    table.repaint();
+                }
+            });
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            return panel;
+        }
+    }
+
+    public Window getFrame() {
+        return frmAppt;
+    }
+}
