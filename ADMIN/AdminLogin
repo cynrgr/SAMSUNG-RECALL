@@ -1,0 +1,161 @@
+package pages;
+
+import java.awt.EventQueue;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JTextField;
+import javax.swing.JPasswordField;
+import javax.swing.JButton;
+import javax.swing.JOptionPane;
+import java.awt.event.ActionListener;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.awt.event.ActionEvent;
+import javax.swing.ImageIcon;
+import java.awt.Font;
+import javax.swing.JPanel;
+import java.awt.Color;
+import javax.swing.SwingConstants;
+import java.awt.Toolkit;
+
+public class AdminLogin {
+
+	private JFrame frmAdminLogin;
+	private JTextField textFieldAdminID;
+	private JPasswordField passwordField;
+	private Connection conn;
+
+	/**
+	 * Launch the application.
+	 */
+	public static void main(String[] args) {
+		EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				try {
+					AdminLogin window = new AdminLogin();
+					window.frmAdminLogin.setVisible(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+	}
+
+	/**
+	 * Create the application.
+	 */
+	public AdminLogin() {
+		initialize();
+		establishConnection();
+	}
+
+	/**
+	 * Initialize the contents of the frame.
+	 */
+	private void initialize() {
+		frmAdminLogin = new JFrame();
+		frmAdminLogin.setIconImage(Toolkit.getDefaultToolkit().getImage("C:\\Users\\Francyne Rigor\\Downloads\\photos used\\samsungLogo.png"));
+		frmAdminLogin.setBounds(100, 100, 1200, 700);
+		frmAdminLogin.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frmAdminLogin.getContentPane().setLayout(null);
+
+		// Headline
+		JLabel lblHeadline = new JLabel("Enter Your Credentials");
+		lblHeadline.setHorizontalAlignment(SwingConstants.CENTER);
+		lblHeadline.setForeground(new Color(255, 255, 255));
+		lblHeadline.setFont(new Font("Tahoma", Font.BOLD, 40));
+		lblHeadline.setBounds(278, 187, 630, 93);
+		frmAdminLogin.getContentPane().add(lblHeadline);
+		
+		// Admin ID Label
+		JLabel lblAdminID = new JLabel("Admin ID:");
+		lblAdminID.setForeground(new Color(255, 255, 255));
+		lblAdminID.setFont(new Font("Tahoma", Font.PLAIN, 18));
+		lblAdminID.setBounds(400, 300, 100, 30);
+		frmAdminLogin.getContentPane().add(lblAdminID);
+		
+		// Admin ID Text Field
+		textFieldAdminID = new JTextField();
+		textFieldAdminID.setFont(new Font("Tahoma", Font.PLAIN, 18));
+		textFieldAdminID.setBounds(500, 300, 300, 40);
+		frmAdminLogin.getContentPane().add(textFieldAdminID);
+		textFieldAdminID.setColumns(10);
+		
+		// Password Label
+		JLabel lblPassword = new JLabel("Password:");
+		lblPassword.setForeground(new Color(255, 255, 255));
+		lblPassword.setFont(new Font("Tahoma", Font.PLAIN, 18));
+		lblPassword.setBounds(400, 350, 100, 30);
+		frmAdminLogin.getContentPane().add(lblPassword);
+		
+		// Password Field
+		passwordField = new JPasswordField();
+		passwordField.setFont(new Font("Tahoma", Font.PLAIN, 18));
+		passwordField.setBounds(500, 350, 300, 40);
+		frmAdminLogin.getContentPane().add(passwordField);
+		
+		JLabel samsungLogo = new JLabel("");
+		samsungLogo.setIcon(new ImageIcon("C:\\Users\\Francyne Rigor\\Downloads\\photos used\\samsungLogo.png"));
+		samsungLogo.setBounds(518, 37, 150, 78);
+		frmAdminLogin.getContentPane().add(samsungLogo);
+		
+		JPanel panel = new JPanel();
+		panel.setBackground(new Color(13, 38, 167));
+		panel.setForeground(new Color(13, 38, 167));
+		panel.setBounds(0, 152, 1186, 405);
+		frmAdminLogin.getContentPane().add(panel);
+		panel.setLayout(null);
+		
+		// Submit Button
+		JButton btnSubmit = new JButton("Submit");
+		btnSubmit.setBounds(533, 280, 120, 40);
+		panel.add(btnSubmit);
+		btnSubmit.setFont(new Font("Tahoma", Font.PLAIN, 18));
+		btnSubmit.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String adminID = textFieldAdminID.getText();
+                String password = new String(passwordField.getPassword());
+                
+                if (validateCredentials(adminID, password)) {
+                    JOptionPane.showMessageDialog(frmAdminLogin, "Login successful");
+                    AdminMenu adminMenu = new AdminMenu(conn);
+                    adminMenu.getFrame().setVisible(true);
+                    frmAdminLogin.dispose();
+                    
+                    
+                } else {
+                    JOptionPane.showMessageDialog(frmAdminLogin, "Invalid Admin ID or Password");
+                }
+            }
+        });
+	}
+	
+	private void establishConnection() {
+		try {
+			conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/samsungdb", "root", "sinrae_16");
+			if (conn == null) {
+				JOptionPane.showMessageDialog(frmAdminLogin, "Failed to connect to the database.", "Database Connection Error", JOptionPane.ERROR_MESSAGE);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+            JOptionPane.showMessageDialog(frmAdminLogin, "Database connection error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+		}
+	}
+	
+	private boolean validateCredentials(String adminID, String password) {
+        String query = "SELECT * FROM admin WHERE AdminID = ? AND AdminPassword = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, adminID);
+            pstmt.setString(2, password);
+            ResultSet rs = pstmt.executeQuery();
+            return rs.next();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(frmAdminLogin, "Error validating credentials: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+    }
+}
