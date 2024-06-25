@@ -11,6 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.swing.JFrame;
@@ -24,6 +25,8 @@ public class ViewBatch {
 
     private JFrame frame;
     private Connection conn;
+    private DefaultTableModel model;
+    private JTable table;
 
     /**
      * Launch the application.
@@ -62,12 +65,12 @@ public class ViewBatch {
         contentPanel.setLayout(null);
         contentPanel.setBounds(0, 0, 1200, 600);
 
-        // Define column names
-        String[] columnNames = {"Batch 1", "Batch 2", "Batch 3", "Batch 4", "Batch 5"};
+        // Define column names and initial data fetch
         Object[][] data = fetchDataFromDatabase();
+        String[] columnNames = fetchColumnNames();
 
-        DefaultTableModel model = new DefaultTableModel(data, columnNames);
-        JTable table = new JTable(model);
+        model = new DefaultTableModel(data, columnNames);
+        table = new JTable(model);
 
         // Set a larger font for the table
         table.setFont(new Font("Tahoma", Font.PLAIN, 18));
@@ -98,41 +101,60 @@ public class ViewBatch {
         JScrollPane scrollPane = new JScrollPane(contentPanel);
         scrollPane.setBounds(0, 0, 1200, 600);
         frame.getContentPane().add(scrollPane);
+
+        // Load data initially
+        loadData();
+    }
+
+    /**
+     * Fetch column names (batch numbers) from the database.
+     */
+    private String[] fetchColumnNames() {
+        List<String> columnNames = new ArrayList<>();
+        String query = "SELECT DISTINCT BatchNum FROM device ORDER BY BatchNum";
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                columnNames.add("Batch " + rs.getInt("BatchNum"));
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return columnNames.toArray(new String[0]);
     }
 
     /**
      * Fetch data from the database.
      */
     private Object[][] fetchDataFromDatabase() {
-        // Define the number of rows and columns
-        int numRows = 30;
-        int numCols = 5;
-
-        Object[][] data = new Object[numRows][numCols];
+        Map<Integer, List<String>> batchMap = new HashMap<>();
         String query = "SELECT BatchNum, SerialNum FROM device ORDER BY BatchNum, SerialNum";
-
         try (PreparedStatement pstmt = conn.prepareStatement(query)) {
             ResultSet rs = pstmt.executeQuery();
-            Map<Integer, ArrayList<String>> batchMap = new HashMap<>();
-
             while (rs.next()) {
                 int batchNum = rs.getInt("BatchNum");
                 String serialNum = rs.getString("SerialNum");
 
                 batchMap.computeIfAbsent(batchNum, k -> new ArrayList<>()).add(serialNum);
             }
-
-            // Populate the data array based on the batch numbers
-            for (int col = 0; col < numCols; col++) {
-                ArrayList<String> serialNums = batchMap.get(col + 1);
-                if (serialNums != null) {
-                    for (int row = 0; row < numRows && row < serialNums.size(); row++) {
-                        data[row][col] = serialNums.get(row);
-                    }
-                }
-            }
         } catch (SQLException ex) {
             ex.printStackTrace();
+        }
+
+        // Find the maximum number of rows needed
+        int maxRows = batchMap.values().stream().mapToInt(List::size).max().orElse(0);
+
+        // Initialize the data array
+        Object[][] data = new Object[maxRows][batchMap.size()];
+
+        // Populate the data array based on the batch numbers
+        for (int col = 0; col < batchMap.size(); col++) {
+            List<String> serialNums = batchMap.get(col + 1);
+            if (serialNums != null) {
+                for (int row = 0; row < serialNums.size(); row++) {
+                    data[row][col] = serialNums.get(row);
+                }
+            }
         }
         return data;
     }
@@ -153,6 +175,15 @@ public class ViewBatch {
             ex.printStackTrace();
         }
         return condition;
+    }
+
+    /**
+     * Load data into the table model.
+     */
+    private void loadData() {
+        String[] columnNames = fetchColumnNames();
+        Object[][] data = fetchDataFromDatabase();
+        model.setDataVector(data, columnNames);
     }
 
     public Window getFrame() {
