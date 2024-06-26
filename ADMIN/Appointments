@@ -31,6 +31,7 @@ public class Appointments {
     private JTable table;
     private DefaultTableModel model;
     private Connection conn;
+    private JButton btnBckMainMenu;
 
     /**
      * Launch the application.
@@ -110,12 +111,24 @@ public class Appointments {
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBounds(51, 50, 1083, 400);
         frmAppt.getContentPane().add(scrollPane);
+        
+        btnBckMainMenu = new JButton("Back to Main Menu");
+        btnBckMainMenu.addActionListener(new ActionListener() {
+        	public void actionPerformed(ActionEvent e) {
+        		openMainMenu();
+        	}
+        });
+        btnBckMainMenu.setBackground(new Color(13, 38, 167));
+        btnBckMainMenu.setForeground(new Color(255, 255, 255));
+        btnBckMainMenu.setFont(new Font("Tahoma", Font.BOLD, 15));
+        btnBckMainMenu.setBounds(477, 492, 175, 40);
+        frmAppt.getContentPane().add(btnBckMainMenu);
 
         loadData();
     }
 
     private void loadData() {
-        String query = "SELECT transacID, ApptTime, ApptDate, ApptType, ApptStatus FROM recall";
+        String query = "SELECT transacID, ApptTime, ApptDate, ApptType, ApptStatus FROM appointment";
         try (PreparedStatement pstmt = conn.prepareStatement(query)) {
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
@@ -133,7 +146,7 @@ public class Appointments {
     }
 
     private void showTransactionDetails(String transacID) {
-        String query = "SELECT SerialNum, SamsungEmail, LastName, FirstName, PhoneNum, ApptType, Branch, ApptDate, ApptTime FROM recall WHERE transacID = ?";
+        String query = "SELECT SerialNum, SamsungEmail, LastName, FirstName, PhoneNum, ApptType, Branch, ApptDate, ApptTime FROM appointment WHERE transacID = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(query)) {
             pstmt.setString(1, transacID);
             ResultSet rs = pstmt.executeQuery();
@@ -213,6 +226,15 @@ public class Appointments {
         public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
             return panel;
         }
+    }
+    private void openMainMenu() {
+        EventQueue.invokeLater(new Runnable() {
+            public void run() {
+            	AdminMenu window = new AdminMenu(conn); // pass the connection back to MainMenu
+            	window.getFrame().setVisible(true);
+                frmAppt.dispose();
+            }
+        });
     }
 
     public Window getFrame() {
