@@ -71,7 +71,22 @@ public class MainMenu {
         btnAppointment.setBounds(99, 350, 444, 50);
         frmMainMenu.getContentPane().add(btnAppointment);
 
-        JButton btnTrack = new JButton("TRACK YOUR APPOINTMENT");
+        JButton btnTrack = new JButton("VIEW TRANSACTION");
+        btnTrack.addActionListener(new ActionListener() {
+        	public void actionPerformed(ActionEvent e) {
+        		EventQueue.invokeLater(new Runnable() {
+                    public void run() {
+                        try {
+                        	TransactionLogin window = new TransactionLogin(conn);
+                            window.getFrame().setVisible(true);
+                            frmMainMenu.dispose();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+        	}
+        });
         btnTrack.setForeground(new Color(13, 38, 167));
         btnTrack.setFont(new Font("Tahoma", Font.BOLD, 20));
         btnTrack.setBounds(99, 430, 444, 50);
