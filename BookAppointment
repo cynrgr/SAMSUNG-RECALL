@@ -1,25 +1,27 @@
 package pages;
 
 import java.awt.EventQueue;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
 import java.awt.Font;
-import javax.swing.JTextField;
-import javax.swing.JButton;
 import java.awt.Color;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Random;
-import java.util.UUID;
 import java.sql.Connection;
-import javax.swing.JComboBox;
-import javax.swing.JOptionPane;
-import javax.swing.JRadioButton;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Random;
 import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JTextField;
 import com.toedter.calendar.JDateChooser;
 import javax.swing.SwingConstants;
 
@@ -55,7 +57,8 @@ public class BookAppointment {
 
     /**
      * Create the application.
-     * @param conn 
+     * 
+     * @param conn
      */
     public BookAppointment(String serialNumber, String fName, String lName, String email, Connection conn) {
         this.serialNumber = serialNumber;
@@ -72,7 +75,8 @@ public class BookAppointment {
      */
     private void initialize() {
         frmBookAppointment = new JFrame();
-        frmBookAppointment.setIconImage(Toolkit.getDefaultToolkit().getImage("C:\\Users\\murei\\OneDrive\\Documents\\codes\\SAMSUNG Recall Management\\photos used\\samsungLogo.png"));
+        frmBookAppointment.setIconImage(Toolkit.getDefaultToolkit()
+                .getImage("C:\\Users\\murei\\OneDrive\\Documents\\codes\\SAMSUNG Recall Management\\photos used\\samsungLogo.png"));
         frmBookAppointment.setTitle("Book an Appointment");
         frmBookAppointment.getContentPane().setBackground(new Color(255, 255, 255));
         frmBookAppointment.setBounds(100, 100, 728, 551);
@@ -87,22 +91,22 @@ public class BookAppointment {
         lblBookAppointment.setFont(new Font("Tahoma", Font.BOLD, 20));
         lblBookAppointment.setBounds(232, 10, 250, 25);
         frmBookAppointment.getContentPane().add(lblBookAppointment);
-        
+
         JLabel lblName = new JLabel("Name:");
         lblName.setFont(new Font("Tahoma", Font.PLAIN, 15));
         lblName.setBounds(175, 88, 100, 25);
         frmBookAppointment.getContentPane().add(lblName);
-        
+
         lblInsertName = new JLabel();
         lblInsertName.setFont(new Font("Tahoma", Font.PLAIN, 15));
         lblInsertName.setBounds(325, 88, 200, 25);
         frmBookAppointment.getContentPane().add(lblInsertName);
-        
+
         JLabel lblEmail = new JLabel("Email:");
         lblEmail.setFont(new Font("Tahoma", Font.PLAIN, 15));
         lblEmail.setBounds(175, 124, 100, 25);
         frmBookAppointment.getContentPane().add(lblEmail);
-        
+
         lblInsertEmail = new JLabel();
         lblInsertEmail.setFont(new Font("Tahoma", Font.PLAIN, 15));
         lblInsertEmail.setBounds(325, 124, 200, 25);
@@ -122,12 +126,12 @@ public class BookAppointment {
         lblBranch.setFont(new Font("Tahoma", Font.PLAIN, 15));
         lblBranch.setBounds(175, 202, 100, 25);
         frmBookAppointment.getContentPane().add(lblBranch);
-        
+
         JComboBox<String> comboBoxBranch = new JComboBox<String>();
         comboBoxBranch.setFont(new Font("Tahoma", Font.PLAIN, 15));
         comboBoxBranch.setBounds(325, 202, 200, 25);
         frmBookAppointment.getContentPane().add(comboBoxBranch);
-        
+
         comboBoxBranch.addItem("Manila");
         comboBoxBranch.addItem("Quezon City");
         comboBoxBranch.addItem("Batangas Area");
@@ -145,7 +149,7 @@ public class BookAppointment {
         comboBoxAType.setFont(new Font("Tahoma", Font.PLAIN, 15));
         comboBoxAType.setBounds(325, 242, 200, 25);
         frmBookAppointment.getContentPane().add(comboBoxAType);
-        
+
         comboBoxAType.addItem("Refund");
         comboBoxAType.addItem("Recall");
 
@@ -205,13 +209,13 @@ public class BookAppointment {
         btnBack.setFont(new Font("Tahoma", Font.BOLD, 15));
         btnBack.setBounds(257, 473, 200, 30);
         frmBookAppointment.getContentPane().add(btnBack);
-        
+
         JPanel panel = new JPanel();
         panel.setLayout(null);
         panel.setBackground(new Color(13, 38, 167));
         panel.setBounds(0, 37, 712, 40);
         frmBookAppointment.getContentPane().add(panel);
-        
+
         JLabel lblSignInGreeting = new JLabel("SERIAL NUMBER: " + serialNumber);
         lblSignInGreeting.setHorizontalAlignment(SwingConstants.CENTER);
         lblSignInGreeting.setForeground(Color.WHITE);
@@ -236,23 +240,40 @@ public class BookAppointment {
                 String time = getSelectedTime();
 
                 if (contact.isEmpty() || branch == null || date.isEmpty() || time == null) {
-                    JOptionPane.showMessageDialog(frmBookAppointment, 
-                        "Please fill out all fields.", 
-                        "Incomplete Form", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(frmBookAppointment,
+                            "Please fill out all fields.",
+                            "Incomplete Form", JOptionPane.ERROR_MESSAGE);
                 } else {
                     String transactionId = generateTransactionId();
-                    JOptionPane.showMessageDialog(frmBookAppointment, 
-                        "Appointment booked for " + fName + " " + lName + " at " + branch + " on " + date + " at " + time + ".\n" +
-                        "A confirmation email has been sent to " + email + ".",
-                        "Appointment Confirmation", JOptionPane.INFORMATION_MESSAGE);
                     
-                    JOptionPane.showMessageDialog(frmBookAppointment, 
-                            "Transaction ID: " + transactionId + "\n" + "PLEASE COPY FOR SMOOTH TRANSACTION",
-                            "IMPORTANT: TRANSACTION ID", JOptionPane.INFORMATION_MESSAGE);
-                    
+                    // Insert into database
+                    boolean inserted = insertAppointment(serialNumber, transactionId, fName, lName, email, contact, branch, type, date, time);
+                  
+                    if (inserted ) {
+                        JOptionPane.showMessageDialog(frmBookAppointment,
+                                "Appointment booked for " + fName + " " + lName + " at " + branch + " on " + date + " at " + time + ".\n"
+                                + "A confirmation email has been sent to " + email + ".",
+                                "Appointment Confirmation", JOptionPane.INFORMATION_MESSAGE);
+
+                        JOptionPane.showMessageDialog(frmBookAppointment,
+                                "Transaction ID: " + transactionId + "\n" + "PLEASE COPY FOR SMOOTH TRANSACTION",
+                                "IMPORTANT: TRANSACTION ID", JOptionPane.INFORMATION_MESSAGE);
+                        
+                        // Clear fields after successful submission
+                        textFieldContact.setText("");
+                        comboBoxBranch.setSelectedIndex(0);
+                        comboBoxAType.setSelectedIndex(0);
+                        dateChooser.setDate(null);
+                        timeGroup.clearSelection();
+                    } else {
+                        JOptionPane.showMessageDialog(frmBookAppointment,
+                                "Failed to book appointment. Please try again.",
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             }
         });
+
     }
 
     private boolean isUnavailable(String time, String[] unavailableTimes) {
@@ -280,7 +301,7 @@ public class BookAppointment {
         lblInsertName.setText(fName + " " + lName);
         lblInsertEmail.setText(email);
     }
-    
+
     private String generateTransactionId() {
         int length = 10;
         String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -294,8 +315,8 @@ public class BookAppointment {
 
         return sb.toString();
     }
-    
- // Method to open Main Menu window
+
+    // Method to open Main Menu window
     private void openMainMenu() {
         EventQueue.invokeLater(new Runnable() {
             public void run() {
@@ -309,4 +330,42 @@ public class BookAppointment {
     public Window getFrame() {
         return frmBookAppointment;
     }
+
+    // Method to insert appointment into database
+    private boolean insertAppointment(String serialNumber, String transactionId, String fName, String lName, String email,
+            String contact, String branch, String type, String date, String time) {
+        String insertQuery = "INSERT INTO appointment (TransacID, SerialNum, SamsungEmail, LastName, FirstName, PhoneNum, ApptType, Branch, ApptDate, ApptTime) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        String ownerUpdateQuery = "UPDATE owner SET PhoneNum = ? WHERE SerialNum = ?";
+
+        try (PreparedStatement pstmtRecall = conn.prepareStatement(insertQuery);
+             PreparedStatement pstmtOwner = conn.prepareStatement(ownerUpdateQuery)) {
+
+            // Insert into recall table
+            pstmtRecall.setString(1, transactionId);
+            pstmtRecall.setString(2, serialNumber);
+            pstmtRecall.setString(3, email);
+            pstmtRecall.setString(4, lName);
+            pstmtRecall.setString(5, fName);
+            pstmtRecall.setString(6, contact);
+            pstmtRecall.setString(7, type);
+            pstmtRecall.setString(8, branch);
+            pstmtRecall.setString(9, date);
+            pstmtRecall.setString(10, time);
+
+            int rowsInsertedRecall = pstmtRecall.executeUpdate();
+
+            // Update phone number in owner table
+            pstmtOwner.setString(1, contact);
+            pstmtOwner.setString(2, serialNumber);
+            int rowsUpdatedOwner = pstmtOwner.executeUpdate();
+
+            return rowsInsertedRecall > 0 && rowsUpdatedOwner > 0;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
 }
+
