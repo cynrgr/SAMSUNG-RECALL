@@ -1,0 +1,146 @@
+package pages;
+
+import java.awt.EventQueue;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JTextField;
+import javax.swing.JButton;
+import java.awt.Font;
+import java.awt.Window;
+import java.awt.event.ActionListener;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.awt.event.ActionEvent;
+import javax.swing.ImageIcon;
+import javax.swing.JPanel;
+import java.awt.Color;
+
+public class TransactionLogin {
+
+    private JFrame frmTransacLogin;
+    private JTextField textField;
+    private Connection conn;
+
+    /**
+     * Launch the application.
+     */
+    public static void main(String[] args) {
+        EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                try {
+                    TransactionLogin window = new TransactionLogin(null);
+                    window.frmTransacLogin.setVisible(true);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    /**
+     * Create the application.
+     */
+    public TransactionLogin(Connection conn) {
+        this.conn = conn;
+        initialize();
+    }
+
+    /**
+     * Initialize the contents of the frame.
+     */
+    private void initialize() {
+        frmTransacLogin = new JFrame();
+        frmTransacLogin.setBounds(100, 100, 700, 500);
+        frmTransacLogin.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frmTransacLogin.getContentPane().setLayout(null);
+
+        JLabel lblHeadline = new JLabel("VIEW YOUR TRANSACTION");
+        lblHeadline.setForeground(new Color(255, 255, 255));
+        lblHeadline.setFont(new Font("Tahoma", Font.BOLD, 24));
+        lblHeadline.setBounds(163, 123, 360, 30);
+        frmTransacLogin.getContentPane().add(lblHeadline);
+
+        JLabel lblTransactionId = new JLabel("Transaction ID:");
+        lblTransactionId.setForeground(new Color(255, 255, 255));
+        lblTransactionId.setFont(new Font("Tahoma", Font.BOLD, 18));
+        lblTransactionId.setBounds(150, 211, 150, 30);
+        frmTransacLogin.getContentPane().add(lblTransactionId);
+
+        textField = new JTextField();
+        textField.setFont(new Font("Tahoma", Font.PLAIN, 18));
+        textField.setBounds(310, 211, 200, 30);
+        frmTransacLogin.getContentPane().add(textField);
+        textField.setColumns(10);
+
+        JButton btnSubmit = new JButton("Submit");
+        btnSubmit.setFont(new Font("Tahoma", Font.PLAIN, 18));
+        btnSubmit.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String transactionID = textField.getText();
+                if (validateTransactionID(transactionID)) {
+                    // If transaction ID is valid, proceed to show details
+                    showTransactionDetails(transactionID);
+                    frmTransacLogin.dispose(); // Close current window if needed
+                } else {
+                    // Show error message or handle invalid transaction ID
+                    JOptionPane.showMessageDialog(frmTransacLogin, "Invalid Transaction ID", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        btnSubmit.setBounds(268, 299, 150, 40);
+        frmTransacLogin.getContentPane().add(btnSubmit);
+
+        JLabel samsungLogo = new JLabel("");
+        samsungLogo.setIcon(new ImageIcon("C:\\Users\\Francyne Rigor\\Downloads\\photos used\\samsungLogo.png"));
+        samsungLogo.setBounds(268, 10, 150, 78);
+        frmTransacLogin.getContentPane().add(samsungLogo);
+
+        JPanel panel = new JPanel();
+        panel.setLayout(null);
+        panel.setForeground(new Color(13, 38, 167));
+        panel.setBackground(new Color(13, 38, 167));
+        panel.setBounds(0, 103, 686, 270);
+        frmTransacLogin.getContentPane().add(panel);
+    }
+
+    /**
+     * Validate the entered transaction ID against the database.
+     * 
+     * @param transacID The transaction ID to validate
+     * @return true if the transaction ID exists in the database, false otherwise
+     */
+    private boolean validateTransactionID(String transacID) {
+        String query = "SELECT COUNT(*) FROM appointment WHERE transacID = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, transacID);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                int count = rs.getInt(1);
+                return count > 0;
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            // Handle database query exception
+            JOptionPane.showMessageDialog(frmTransacLogin, "Error validating transaction ID", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        return false;
+    }
+
+    /**
+     * Show transaction details for the given transaction ID.
+     * 
+     * @param transacID The transaction ID to display details for
+     */
+    private void showTransactionDetails(String transacID) {
+        // Implement how you want to show the details, e.g., open a new window
+        TransactionDetails detailsWindow = new TransactionDetails(transacID, conn);
+        detailsWindow.getFrame().setVisible(true);
+    }
+
+    public Window getFrame() {
+        return frmTransacLogin;
+    }
+}
