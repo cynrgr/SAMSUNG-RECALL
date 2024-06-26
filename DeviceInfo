@@ -159,7 +159,7 @@ public class DeviceInfo {
 
                 lblProductName.setText("PRODUCT NAME: " + productName);
                 lblPurchaseDate.setText("PURCHASE DATE: " + purchaseDate);
-                lblDeviceCondition.setText(deviceCondition);
+                lblDeviceCondition.setText("Your device battery is deemed " + deviceCondition);
             } else {
                 JOptionPane.showMessageDialog(frmDeviceInformation, "No device found with the given serial number.", "Not Found", JOptionPane.ERROR_MESSAGE);
             }
