@@ -1,0 +1,208 @@
+package pages;
+
+import java.awt.Color;
+import java.awt.EventQueue;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JButton;
+import java.awt.Font;
+import java.awt.Window;
+import java.awt.event.ActionListener;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.awt.event.ActionEvent;
+import javax.swing.ImageIcon;
+
+public class TransactionDetails {
+
+	private JFrame frame;
+	private Connection conn;
+	private String transactionID;
+	private JLabel lblTransactionId;
+	private JLabel lblSerialNumber;
+	private JLabel lblSamsungEmail;
+	private JLabel lblName;
+	private JLabel lblPhoneNumber;
+	private JLabel lblAppointmentType;
+	private JLabel lblBranch;
+	private JLabel lblAppointmentDate;
+	private JLabel lblAppointmentTime;
+	
+	
+	
+
+	/**
+	 * Launch the application.
+	 */
+	public static void main(String[] args) {
+		EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				try {
+					TransactionDetails window = new TransactionDetails(args[0], null);
+					window.frame.setVisible(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+	}
+
+	/**
+	 * Create the application.
+	 */
+	public TransactionDetails(String transactionID, Connection conn) {
+		this.transactionID = transactionID;
+		this.conn = conn;
+		initialize();
+		loadtransactionDetails();
+	}
+
+	/**
+	 * Initialize the contents of the frame.
+	 */
+	private void initialize() {
+		frame = new JFrame();
+		frame.setBounds(100, 100, 700, 650);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.getContentPane().setLayout(null);
+		
+		lblTransactionId = new JLabel("Transaction ID: " + transactionID);
+		lblTransactionId.setFont(new Font("Tahoma", Font.PLAIN, 18));
+		lblTransactionId.setBounds(50, 100, 600, 30);
+		frame.getContentPane().add(lblTransactionId);
+		
+		lblSerialNumber = new JLabel("Serial Number: ");
+		lblSerialNumber.setFont(new Font("Tahoma", Font.PLAIN, 18));
+		lblSerialNumber.setBounds(50, 150, 600, 30);
+		frame.getContentPane().add(lblSerialNumber);
+		
+		lblSamsungEmail = new JLabel("Samsung Email: ");
+		lblSamsungEmail.setFont(new Font("Tahoma", Font.PLAIN, 18));
+		lblSamsungEmail.setBounds(50, 200, 600, 30);
+		frame.getContentPane().add(lblSamsungEmail);
+		
+		lblName = new JLabel("Name: ");
+		lblName.setFont(new Font("Tahoma", Font.PLAIN, 18));
+		lblName.setBounds(50, 250, 600, 30);
+		frame.getContentPane().add(lblName);
+		
+		lblPhoneNumber = new JLabel("Phone Number: " );
+		lblPhoneNumber.setFont(new Font("Tahoma", Font.PLAIN, 18));
+		lblPhoneNumber.setBounds(50, 300, 600, 30);
+		frame.getContentPane().add(lblPhoneNumber);
+		
+		lblAppointmentType = new JLabel("Appointment Type: " );
+		lblAppointmentType.setFont(new Font("Tahoma", Font.PLAIN, 18));
+		lblAppointmentType.setBounds(50, 350, 600, 30);
+		frame.getContentPane().add(lblAppointmentType);
+		
+		lblBranch = new JLabel("Branch: " );
+		lblBranch.setFont(new Font("Tahoma", Font.PLAIN, 18));
+		lblBranch.setBounds(50, 400, 600, 30);
+		frame.getContentPane().add(lblBranch);
+		
+		lblAppointmentDate = new JLabel("Appointment Date: " );
+		lblAppointmentDate.setFont(new Font("Tahoma", Font.PLAIN, 18));
+		lblAppointmentDate.setBounds(50, 450, 600, 30);
+		frame.getContentPane().add(lblAppointmentDate);
+		
+		lblAppointmentTime = new JLabel("Appointment Time: " );
+		lblAppointmentTime.setFont(new Font("Tahoma", Font.PLAIN, 18));
+		lblAppointmentTime.setBounds(50, 500, 600, 30);
+		frame.getContentPane().add(lblAppointmentTime);
+		
+		JButton btnMissed = new JButton("Missed");
+		btnMissed.setFont(new Font("Tahoma", Font.PLAIN, 18));
+		btnMissed.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				// Add logic for missed appointment
+				updataAppointmentStatus("Missed");
+			}
+		});
+		btnMissed.setBounds(150, 550, 150, 40);
+		frame.getContentPane().add(btnMissed);
+		
+		JButton btnCompleted = new JButton("Completed");
+		btnCompleted.setFont(new Font("Tahoma", Font.PLAIN, 18));
+		btnCompleted.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				// Add logic for completed appointment
+				updataAppointmentStatus("Completed");
+			}
+		});
+		btnCompleted.setBounds(350, 550, 150, 40);
+		frame.getContentPane().add(btnCompleted);
+		
+		JLabel samsungLogo = new JLabel("");
+		samsungLogo.setIcon(new ImageIcon("C:\\Users\\Francyne Rigor\\Downloads\\photos used\\samsungLogo.png"));
+		samsungLogo.setBounds(10, 10, 150, 78);
+		frame.getContentPane().add(samsungLogo);
+		
+	}
+
+	public Window getFrame() {
+		// TODO Auto-generated method stub
+		return frame;
+	}
+	
+	private void loadtransactionDetails() {
+		String query = "SELECT SerialNum, SamsungEmail, LastName, FirstName, "
+				+ "PhoneNum, ApptType, Branch, ApptDate, ApptTime FROM appointment WHERE TransacID = ?";
+		try (PreparedStatement pstmt = conn.prepareStatement(query)){
+			pstmt.setString(1, transactionID);
+			ResultSet rs = pstmt.executeQuery();
+			
+			if (rs.next()) {
+//				String transactionId = rs.getString("TransacID");
+				String serialNum = rs.getString("SerialNum");
+				String email = rs.getString("SamsungEmail");
+				String lName = rs.getString("LastName");
+				String fName = rs.getString("FirstName");
+				String phoneNum = rs.getString("PhoneNum");
+				String ApptType = rs.getString("ApptType");
+				String storeBranch = rs.getString("Branch");
+				String ApptDate = rs.getString("ApptDate");
+				String ApptTime = rs.getString("ApptTime");
+				
+				lblTransactionId.setText("Transaction ID: " + transactionID);
+				lblSerialNumber.setText("Serial Number: " + serialNum);
+				lblSamsungEmail.setText("Email: " + email);
+				lblName.setText("Name: " + fName + " " + lName);
+				lblPhoneNumber.setText("Phone Number: " + phoneNum);
+				lblAppointmentType.setText("Appointment Type: " + ApptType);
+				lblBranch.setText("Branch: " + storeBranch);
+				lblAppointmentDate.setText("Appointment Date: " + ApptDate);
+				lblAppointmentTime.setText("Appointment Time: " + ApptTime);
+
+			} else {
+                JOptionPane.showMessageDialog(frame, "Transaction ID not found", "Not Found", JOptionPane.ERROR_MESSAGE);
+				}
+			} catch (SQLException e) {
+	            e.printStackTrace();
+	            JOptionPane.showMessageDialog(frame, "Error retrieving transaction details" , "Error", JOptionPane.ERROR_MESSAGE);
+			}
+		}
+	
+	private void updataAppointmentStatus(String status) {
+		String query = "UPDATE appointment SET ApptStatus = ? WHERE TransacID = ?";
+		try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+			pstmt.setString(1, status);
+			pstmt.setString(2, transactionID);
+			int updatedRows = pstmt.executeUpdate();
+			if (updatedRows > 0) {
+				JOptionPane.showMessageDialog(frame, "Appointment status updated successfully", "Success", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(frame, "Failed to update appointment status", "Error", JOptionPane.ERROR_MESSAGE);
+            } 
+		}catch (SQLException ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(frame, "Error updating appointment status", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+       }
+}
+
+
+
